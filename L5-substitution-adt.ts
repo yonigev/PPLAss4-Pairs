@@ -1,6 +1,6 @@
 import { curry, map, prop, zipWith } from 'ramda';
 import { isEmpty } from "./L5-ast";
-import { eqTVar, isAtomicTExp, isProcTExp, isTVar, makeProcTExp, unparseTExp, TExp, TVar } from "./TExp";
+import { eqTVar, isAtomicTExp, isProcTExp, isTVar, makeProcTExp, unparseTExp, TExp, TVar, isPairTExp } from "./TExp";
 import { getErrorMessages, hasNoError, isError } from "./error";
 import { first, rest } from "./list";
 
@@ -46,6 +46,7 @@ export const checkNoOccurrence = (tvar: TVar, te: TExp): true | Error => {
         isProcTExp(e) ? (hasNoError(map(check, e.paramTEs)) ?
                           check(e.returnTE) :
                           Error(getErrorMessages(map(check, e.paramTEs)))) :
+        isPairTExp(e) ?  (( isError(check(e.car)) || isError(check(e.cdr))) ? Error(`Pair Occur check error - circular sub ${tvar.var} in ${unparseTExp(te)}`) : true)  :
         Error(`Bad type expression ${e} in ${te}`);
     // console.log(`checkNoOcc ${tvar.var} in ${unparseTExp(te)}`);
     return check(te);

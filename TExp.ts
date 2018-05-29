@@ -145,6 +145,7 @@ export const eqAtomicTExp = (te1: AtomicTExp, te2: AtomicTExp): boolean =>
 export const parseTE = (t: string): TExp | Error =>
     parseTExp(p(t));
 
+
 /*
 ;; Purpose: Parse a type expression
 ;; Type: [SExp -> TEx[]]
@@ -155,14 +156,17 @@ export const parseTE = (t: string): TExp | Error =>
 ;; parseTExp('(T * T -> boolean)') => '(proc-te ((tvar T) (tvar T)) bool-te)
 ;; parseTExp('(number -> (number -> number)') => '(proc-te (num-te) (proc-te (num-te) num-te))
 */
-export const parseTExp = (texp: any): TExp | Error =>
-    (texp === "number") ? makeNumTExp() :
+export const parseTExp = (texp: any): TExp | Error =>{
+    // if(isString(texp))
+    //     console.log("parseTExp        "+JSON.stringify(texp))
+    return ((texp === "number") ? makeNumTExp() :
     (texp === "boolean") ? makeBoolTExp() :
     (texp === "void") ? makeVoidTExp() :
     (texp === "string") ? makeStrTExp() :
     isString(texp) ? makeTVar(texp) :
     isArray(texp) ? parseCompoundTExp(texp) :
-    Error(`Unexpected TExp - ${texp}`);
+    Error(`Unexpected TExp - ${texp}`));
+}
 
 /*
 ;; expected structure: (<params> -> <returnte>)
@@ -170,28 +174,36 @@ export const parseTExp = (texp: any): TExp | Error =>
 ;; We do not accept (a -> b -> c) - must parenthesize
 */
 const parseCompoundTExp = (texps: any[]): ProcTExp | PairTExp | Error => {
+    //console.log("ParseCompoundTExp - "+ JSON.stringify(texps,null,2));
     const pos = texps.indexOf('->');
     const pair_pos=texps.indexOf('Pair');
-    return (pair_pos === -1) ? 
-    (pos === -1)  ? Error(`Procedure type expression without -> - ${texps}`) :
-    (pos === 0) ? Error(`No param types in proc texp - ${texps}`) :
-    (pos === texps.length - 1) ? Error(`No return type in proc texp - ${texps}`) :
-    (texps.slice(pos + 1).indexOf('->') > -1) ? Error(`Only one -> allowed in a procexp - ${texps}`) :
-    safeMakeProcTExp(parseTupleTExp(texps.slice(0, pos)),
-                     parseTExp(texps[pos + 1])):
+    if(pair_pos === -1){
+        //console.log("not pair")
+        return ((pos === -1)  ? Error(`Procedure type expression without -> - ${texps}`) :
+        (pos === 0) ? Error(`No param types in proc texp - ${texps}`) :
+        (pos === texps.length - 1) ? Error(`No return type in proc texp - ${texps}`) :
+        (texps.slice(pos + 1).indexOf('->') > -1) ? Error(`Only one -> allowed in a procexp - ${texps}`) :
+        safeMakeProcTExp(parseTupleTExp(texps.slice(0, pos)),
+                        parseTExp(texps[pos + 1])));}
+    else{
     //pair_pos !=-1
-    (pos > -1) ? Error('Cannot be ProcTExp and also PairTExp'): 
-    (pair_pos > 0 || texps.length != 3) ? Error('expected (Pair <first> <second>'):
-    //TODO: Check if 'Pair' occurs again?
-    safeMakePairTExp(parseTExp( texps.slice(1,2)),parseTExp( texps.slice(2,3)));
+        console.log("dealing with pair - "+JSON.stringify(texps,null,2));
+        return ((pos > -1) ? Error('Cannot be ProcTExp and also PairTExp'): 
+        (pair_pos > 0 || texps.length != 3) ? Error('expected (Pair <first> <second>'):
+         safeMakePairTExp(parseTExp( first(texps.slice(1,2))   ),parseTExp( first(texps.slice(2,3)) )));
+    }
 };
 
-const safeMakePairTExp=(first : TExp | Error, second:TExp | Error)=>
-isError(first) ? first :
+const safeMakePairTExp=(first : TExp | Error, second:TExp | Error)=>{
+    console.log("safeMakePairTExp - first "+JSON.stringify(first,null,2))
+
+return(isError(first) ? first :
 isError(second) ? second:
 isTupleTExp(first) ? Error('cannot be a Tuple'):
 isTupleTExp(second) ? Error('cannot be a Tuple'):
-makePairTExp(<NonTupleTExp> first,<NonTupleTExp>second);
+makePairTExp(<NonTupleTExp> first,<NonTupleTExp>second));
+}
+
 
 
 const safeMakeProcTExp = (args: Array<TExp | Error>, returnTE: Error | TExp): Error | ProcTExp =>

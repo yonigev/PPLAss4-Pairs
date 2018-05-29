@@ -30,8 +30,15 @@ const checkEqualType = (te1: TExp | Error, te2: TExp | Error, exp: Exp): true | 
 // of its structure and the annotations it contains.
 
 // Purpose: Compute the type of a concrete fully-typed expression
-export const L5typeof = (concreteExp: string): string | Error =>
-    unparseTExp(typeofExp(parse(concreteExp), makeEmptyTEnv()));
+export const L5typeof = (concreteExp: string): string | Error =>{
+ 
+ 
+ const ans =    unparseTExp(typeofExp(parse(concreteExp), makeEmptyTEnv()));
+
+ console.log("ans: "+JSON.stringify(ans,null,2));
+ return ans;
+
+}
 
 // Purpose: Compute the type of an expression
 // Traverse the AST and check the type according to the exp type.
@@ -77,15 +84,18 @@ const typePredTExp = parseTE('(T -> boolean)');
 
 // Todo: cons, car, cdr
 export const typeofPrim = (p: PrimOp): TExp | Error =>
-    ['+', '-', '*', '/'].includes(p.op) ? numOpTExp :
-    ['and', 'or'].includes(p.op) ? boolOpTExp :
-    ['>', '<', '='].includes(p.op) ? numCompTExp :
-    ['number?', 'boolean?', 'string?', 'symbol?', 'list?'].includes(p.op) ? typePredTExp :
+    ['+', '-', '*', '/'].indexOf(p.op) > -1 ? numOpTExp :
+    ['and', 'or'].indexOf(p.op) > -1 ? boolOpTExp :
+    ['>', '<', '='].indexOf(p.op) > -1 ? numCompTExp :
+    ['number?', 'boolean?', 'string?', 'symbol?', 'list?'].indexOf(p.op) > -1 ? typePredTExp :
     (p.op === 'not') ? parseTE('(boolean -> boolean)') :
     (p.op === 'eq?') ? parseTE('(T1 * T2 -> boolean)') :
     (p.op === 'string=?') ? parseTE('(T1 * T2 -> boolean)') :
     (p.op === 'display') ? parseTE('(T -> void)') :
     (p.op === 'newline') ? parseTE('(Empty -> void)') :
+    (p.op === 'cons')    ? parseTE('(T1 * T2 -> (Pair T1 T2))'):
+    (p.op === 'car')    ? parseTE('((Pair T1 T2) -> T1)'):
+    (p.op === 'cdr')    ? parseTE('((Pair T1 T2) -> T2)'):
     Error(`Unknown primitive ${p.op}`);
 
 
@@ -133,6 +143,9 @@ export const typeofProc = (proc: ProcExp, tenv: TEnv): TExp | Error => {
 // We also check the correct number of arguments is passed.
 export const typeofApp = (app: AppExp, tenv: TEnv): TExp | Error => {
     const ratorTE = typeofExp(app.rator, tenv);
+    console.log("**** "+JSON.stringify(ratorTE,null,2));
+    console.log("******** "+JSON.stringify(app.rator,null,2));
+
     if (! isProcTExp(ratorTE))
         return Error(`Application of non-procedure: ${unparseTExp(ratorTE)} in ${unparse(app)}`);
     if (app.rands.length !== ratorTE.paramTEs.length)
