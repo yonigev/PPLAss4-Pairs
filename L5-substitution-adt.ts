@@ -1,6 +1,6 @@
 import { curry, map, prop, zipWith } from 'ramda';
 import { isEmpty } from "./L5-ast";
-import { eqTVar, isAtomicTExp, isProcTExp, isTVar, makeProcTExp, unparseTExp, TExp, TVar, isPairTExp } from "./TExp";
+import { eqTVar, isAtomicTExp, isProcTExp, isTVar, makeProcTExp, unparseTExp, TExp, TVar, isPairTExp, makePairTExp, NonTupleTExp } from "./TExp";
 import { getErrorMessages, hasNoError, isError } from "./error";
 import { first, rest } from "./list";
 
@@ -75,6 +75,7 @@ export const applySub = (sub: Sub, te: TExp): TExp =>
     isTVar(te) ? subGet(sub, te) :
     isProcTExp(te) ? makeProcTExp(map(curry(applySub)(sub), te.paramTEs),
                                   applySub(sub, te.returnTE)) :
+    isPairTExp(te) ? makePairTExp(<NonTupleTExp> applySub(sub,te.car),<NonTupleTExp> applySub(sub,te.cdr)):
     te;
 
 // ============================================================
@@ -99,8 +100,12 @@ export const extendSub = (sub: Sub, v: TVar, te: TExp): Sub | Error => {
     if (isEmptySub(sub))
         return sub2;
     const updatedTes = map(curry(applySub)(sub2), sub.tes);
-    if (map(prop('var'), sub.vars).includes(v.var))
+    if (map(prop('var'), sub.vars).indexOf(v.var) > -1){
         return makeSub(sub.vars, updatedTes);
-    else
+    }
+    else{
+
         return makeSub([v].concat(sub.vars), [te].concat(updatedTes));
+
+    }
 };

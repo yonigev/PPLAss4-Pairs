@@ -30,15 +30,11 @@ const checkEqualType = (te1: TExp | Error, te2: TExp | Error, exp: Exp): true | 
 // of its structure and the annotations it contains.
 
 // Purpose: Compute the type of a concrete fully-typed expression
-export const L5typeof = (concreteExp: string): string | Error =>{
- 
- 
- const ans =    unparseTExp(typeofExp(parse(concreteExp), makeEmptyTEnv()));
+export const L5typeof = (concreteExp: string): string | Error => 
+    unparseTExp(typeofExp(parse(concreteExp), makeEmptyTEnv()));
 
- console.log("ans: "+JSON.stringify(ans,null,2));
- return ans;
 
-}
+
 
 // Purpose: Compute the type of an expression
 // Traverse the AST and check the type according to the exp type.
@@ -124,6 +120,7 @@ export const typeofIf = (ifExp: IfExp, tenv: TEnv): TExp | Error => {
 // If   type<body>(extend-tenv(x1=t1,...,xn=tn; tenv)) = t
 // then type<lambda (x1:t1,...,xn:tn) : t exp)>(tenv) = (t1 * ... * tn -> t)
 export const typeofProc = (proc: ProcExp, tenv: TEnv): TExp | Error => {
+    //console.log("type of proc - "+ JSON.stringify(proc,null,2));
     const argsTEs = map((vd) => vd.texp, proc.args);
     const extTEnv = makeExtendTEnv(map((vd) => vd.var, proc.args), argsTEs, tenv);
     const constraint1 = checkEqualType(typeofExps(proc.body, extTEnv), proc.returnTE, proc);
@@ -143,14 +140,14 @@ export const typeofProc = (proc: ProcExp, tenv: TEnv): TExp | Error => {
 // We also check the correct number of arguments is passed.
 export const typeofApp = (app: AppExp, tenv: TEnv): TExp | Error => {
     const ratorTE = typeofExp(app.rator, tenv);
-    console.log("**** "+JSON.stringify(ratorTE,null,2));
-    console.log("******** "+JSON.stringify(app.rator,null,2));
+   
 
     if (! isProcTExp(ratorTE))
         return Error(`Application of non-procedure: ${unparseTExp(ratorTE)} in ${unparse(app)}`);
     if (app.rands.length !== ratorTE.paramTEs.length)
         return Error(`Wrong parameter numbers passed to proc: ${unparse(app)}`);
-    const constraints = zipWith((rand, trand) => checkEqualType(typeofExp(rand, tenv), trand, app),
+    
+    const constraints = zipWith((rand, trand) => checkEqualType(<TExp>typeofExp(rand, tenv), trand,app),
                                 app.rands, ratorTE.paramTEs);
     if (hasNoError(constraints))
         return ratorTE.returnTE;
