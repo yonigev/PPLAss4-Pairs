@@ -200,16 +200,22 @@ import { infer} from './L5-type-equations';
 // //assert.deepEqual(L5typeof('(quote (quote (1 2)))'), 'literal');
 
 // // final checks..
-// assert.deepEqual(infer(`(lambda (x) (= x 0))`), '(number -> boolean)');
-// assert.deepEqual(infer(`(lambda ((x : number) (y : boolean)) (cons x y))`), '(number * boolean -> (Pair number boolean))');
-// assert.deepEqual(infer(`(cons x y)`), '(Pair T1 T2)');
-//  assert.deepEqual(infer(`(lambda ((pair : (Pair boolean number))) (car pair))`), '((Pair boolean number) -> boolean)');
+  //assert.deepEqual(infer(`(lambda (x) (= x 0))`), '(number -> boolean)');
+ // assert.deepEqual(infer(`(lambda ((x : number) (y : boolean)) (cons x y))`), '(number * boolean -> (Pair number boolean))');
+ 
+  // assert.deepEqual(infer(`(lambda ((pair : (Pair boolean number))) (car pair))`), '((Pair boolean number) -> boolean)');
 //  assert.deepEqual(infer(`(lambda ((pair : (Pair boolean number))) (cdr pair))`), '((Pair boolean number) -> number)');
 //  assert.deepEqual(infer('(car (cons 1 #t))'), 'number');
 //  assert.deepEqual(infer('(cdr (cons 1 #t))'), 'boolean');
-//assert.deepEqual(infer(`(cons (car (cons 1 2)) (cdr '(#t.2)))`), '(Pair number boolean)');
-//console.log(JSON.stringify(infer(`(cons (car (cons 1 2)) (cdr '(1.2)))`),null,2))
-//console.log(JSON.stringify(infer(`(cons (cdr '(1.#f)) (car '(123.#t)))`),null,2))
+//  assert.deepEqual(infer(`(cons (car (cons 1 2)) (car '(#t.2)))`), '(Pair number boolean)');
+// console.log(JSON.stringify(infer(`(cons (car (cons 1 2)) (cdr '(1.2)))`),null,2))
+//console.log(JSON.stringify(infer(`(cons (cdr '(2.#t)) 1)`),null,2))
+//console.log(JSON.stringify(infer(`(cons 1 (cons (2 3)))`),null,2))
+ assert(infer("cons"), "(T1 * T2 -> (Pair T1 T2))");
+ assert(infer("car"), "((Pair T1 T2) -> T1)");
+ assert(infer("(cons 1 1)"), "(Pair number number)");
+ assert(
+//     infer("(cons 1 (lambda (x) (+ x 1)))"), "(Pair number (number -> number))");
 
 //console.log(JSON.stringify(infer(`(cons (cdr '(1.2))  (car '(122.#t)))`),null,2))
 console.log(JSON.stringify(infer(`(cons (cdr '(1.2))  (car '(122.#t)))`),null,2))

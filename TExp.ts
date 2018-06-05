@@ -195,7 +195,8 @@ const parseCompoundTExp = (texps: any[]): ProcTExp | PairTExp | Error => {
 };
 
 const safeMakePairTExp=(first : TExp | Error, second:TExp | Error)=>{
-    //console.log("safeMakePairTExp - first "+JSON.stringify(first,null,2))
+console.log("safeMakePairTExp - first \n"+JSON.stringify(first,null,2))
+console.log("safeMakePairTExp - second \n"+JSON.stringify(second,null,2))
 
 return(isError(first) ? first :
 isError(second) ? second:
