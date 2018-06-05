@@ -236,7 +236,7 @@ const solve = (equations: Equation[], sub: S.Sub): S.Sub | Error => {
                 Error(`Equation with non-equal atomic type ${eq}`);
 
     if (A.isEmpty(equations)) return sub;
-    console.log(JSON.stringify(first(equations),null,4))
+    
     const eq = makeEquation(S.applySub(sub, first(equations).left),
                             S.applySub(sub, first(equations).right));
     //console.log("----solving----    "+T.unparseTExp(eq.left) + " = "+T.unparseTExp(eq.right));

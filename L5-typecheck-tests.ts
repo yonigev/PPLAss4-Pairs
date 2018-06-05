@@ -211,11 +211,10 @@ import { infer} from './L5-type-equations';
 // console.log(JSON.stringify(infer(`(cons (car (cons 1 2)) (cdr '(1.2)))`),null,2))
 //console.log(JSON.stringify(infer(`(cons (cdr '(2.#t)) 1)`),null,2))
 //console.log(JSON.stringify(infer(`(cons 1 (cons (2 3)))`),null,2))
- assert(infer("cons"), "(T1 * T2 -> (Pair T1 T2))");
- assert(infer("car"), "((Pair T1 T2) -> T1)");
+  assert(infer("cons"), "(T1 * T2 -> (Pair T1 T2))");
+  assert(infer("car"), "((Pair T1 T2) -> T1)");
  assert(infer("(cons 1 1)"), "(Pair number number)");
  assert(
-//     infer("(cons 1 (lambda (x) (+ x 1)))"), "(Pair number (number -> number))");
+     infer("(cons 1 (lambda (x) (+ x 1)))"), "(Pair number (number -> number))");
 
-//console.log(JSON.stringify(infer(`(cons (cdr '(1.2))  (car '(122.#t)))`),null,2))
-console.log(JSON.stringify(infer(`(cons (cdr '(1.2))  (car '(122.#t)))`),null,2))
+
