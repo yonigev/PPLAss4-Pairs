@@ -208,4 +208,5 @@ import { infer} from './L5-type-equations';
 //  assert.deepEqual(infer('(car (cons 1 #t))'), 'number');
 //  assert.deepEqual(infer('(cdr (cons 1 #t))'), 'boolean');
 //assert.deepEqual(infer(`(cons (car (cons 1 2)) (cdr '(#t.2)))`), '(Pair number boolean)');
-console.log(JSON.stringify(infer(`(cons (car (cons 1 2)) (cdr '(1.2)))`),null,2))
+//console.log(JSON.stringify(infer(`(cons (car (cons 1 2)) (cdr '(1.2)))`),null,2))
+console.log(JSON.stringify(infer(`(cons (cdr '(1.#f)) (car '(123.#t)))`),null,2))
