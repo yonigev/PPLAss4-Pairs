@@ -194,6 +194,7 @@ const solve = (equations: Equation[], sub: S.Sub): S.Sub | Error => {
     if (A.isEmpty(equations)) return sub;
     const eq = makeEquation(S.applySub(sub, first(equations).left),
                             S.applySub(sub, first(equations).right));
+    console.log("EQUATION-----------------------\n"+JSON.stringify(eq,null,2)+"\n----------------------------------")
 
     return T.isTVar(eq.left) ? solveVarEq(eq.left, eq.right) :
            T.isTVar(eq.right) ? solveVarEq(eq.right, eq.left) :
@@ -203,14 +204,19 @@ const solve = (equations: Equation[], sub: S.Sub): S.Sub | Error => {
            Error(`Equation contains incompatible types ${eq}`);
 };
 
+const canPairUnify = (p1: T.PairTExp, p2: T.PairTExp):boolean =>{
+    if(T.isTVar(p1.car) && T.isTVar(p2.car)){
+        return (T.equivalentTEs(p1.car,p2.car) && T.equivalentTEs(p1.cdr,p2.cdr));
+    }
+
+}
 // Signature: canUnify(equation)
 // Purpose: Compare the structure of the type expressions of the equation
 const canUnify = (eq: Equation): boolean =>
     (T.isProcTExp(eq.left) && T.isProcTExp(eq.right))?
         (eq.left.paramTEs.length === eq.right.paramTEs.length):
     (T.isPairTExp(eq.left) && T.isPairTExp(eq.right))?
-        true:
-        
+        canPairUnify(eq.left,eq.right):        
         false;
         
 

@@ -292,7 +292,7 @@ export const matchTVarsInTE = <T1, T2>(te1: TExp, te2: TExp,
     (isTVar(te1) || isTVar(te2)) ? matchTVarsinTVars(tvarDeref(te1), tvarDeref(te2), succ, fail) :
     (isAtomicTExp(te1) || isAtomicTExp(te2)) ?
         ((isAtomicTExp(te1) && isAtomicTExp(te2) && eqAtomicTExp(te1, te2)) ? succ([]) : fail()) :
-    (isPairTExp(te1) && isPairTExp(te2)) ? matchTVarsInPairs(te1, te2,succ,fail) :
+    (isPairTExp(te1) && isPairTExp(te2)) ? matchTVarsInPairs(tvarDeref(te1),tvarDeref(te2),succ,fail) :
     matchTVarsInTProcs(te1, te2, succ, fail);
 
 //added task 2. matches Type variables in PAIRS.
