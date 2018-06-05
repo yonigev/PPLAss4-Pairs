@@ -18,7 +18,7 @@ import { allT, first, rest, second } from './list';
 // as part of a fully-annotated type check process of exp.
 // Return an error if the types are different - true otherwise.
 // Exp is only passed for documentation purposes.
-const checkEqualType = (te1: TExp | Error, te2: TExp | Error, exp: Exp): true | Error =>
+export const checkEqualType = (te1: TExp | Error, te2: TExp | Error, exp: Exp): true | Error =>
   isError(te1) ? te1 :
   isError(te2) ? te2 :
   deepEqual(te1, te2) ||

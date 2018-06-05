@@ -5,7 +5,8 @@ import * as S from "./L5-substitution-adt";
 import * as TC from "./L5-typecheck";
 import * as T from "./TExp";
 import { isError, safeF, trust } from './error';
-import {first, rest} from "./list";
+import {first, rest, second} from "./list";
+import deepEqual = require("deep-equal");
 
 // ============================================================n
 // Pool ADT
@@ -84,7 +85,6 @@ export const makeEquation = (l: T.TExp, r: T.TExp): Equation => ({left: l, right
 export const poolToEquations = (pool: Pool): Equation[] => {
     // VarRef generate no equations beyond that of var-decl - remove them.
     const poolWithoutVars: Pool = R.filter(R.propSatisfies(R.complement(A.isVarRef), 'e'), pool);
-    
     return R.chain((e: A.Exp) => makeEquationFromExp(e, pool), R.pluck('e', poolWithoutVars));
 };
 
@@ -100,6 +100,12 @@ export const makeEquationFromExp = (exp: A.Exp, pool: Pool): Equation[] =>
     A.isProcExp(exp) ? [makeEquation(inPool(pool, exp),
                                     T.makeProcTExp(R.map((vd) => vd.texp, exp.args),
                                                    inPool(pool, R.last(exp.body))))] :
+
+    (A.isAppExp(exp) && A.isPrimOp(exp.rator) && exp.rator.op === "cons") ? 
+                                [makeEquation(inPool(pool, exp),
+                                            //T.makeProcTExp(R.map((e) => inPool(pool, e), exp.rands),
+                                          T.makePairTExp(<T.NonTupleTExp> inPool(pool,first(exp.rands)),<T.NonTupleTExp>inPool(pool,second(exp.rands) ))     )] :
+
     // An application must respect the type of its operator
     // Type(Operator) = [T1 * .. * Tn -> Te]
     // Type(Application) = Te
@@ -123,9 +129,9 @@ export const makeEquationFromExp = (exp: A.Exp, pool: Pool): Equation[] =>
 export const inferType = (exp: A.Exp): T.TExp => {
 
 
-    // console.log(`Infer ${A.unparse(exp)}`)
+  //  console.log(`Infer ${A.unparse(exp)}`)
     const pool = expToPool(exp);
-     //console.log(`Pool ${JSON.stringify(pool,null,2)}`);
+//    console.log(`Pool ${JSON.stringify(pool,null,2)}`);
     const equations = poolToEquations(pool);
     //console.log(`Equations ${JSON.stringify(equations,null,2)}`);
     const sub = solveEquations(equations);
@@ -138,6 +144,7 @@ export const inferType = (exp: A.Exp): T.TExp => {
         return texp;
 };
 
+//if the string contains a shorted version of CONS, change it to normal
 export const litToCons=(exp:string)=>{
 
     const quote_index=exp.indexOf("'");
@@ -179,7 +186,7 @@ export const solveEquations = (equations: Equation[]): S.Sub | Error =>
 const solve = (equations: Equation[], sub: S.Sub): S.Sub | Error => {
 
     
-    
+    //console.log("\n\n\nSolve - Sub:"+JSON.stringify(sub,null,2));
     const solveVarEq = (tvar: T.TVar, texp: T.TExp): S.Sub | Error => {
             const sub2 = S.extendSub(sub, tvar, texp);
             return isError(sub2) ? sub2 : solve(rest(equations), sub2);
@@ -194,7 +201,6 @@ const solve = (equations: Equation[], sub: S.Sub): S.Sub | Error => {
     if (A.isEmpty(equations)) return sub;
     const eq = makeEquation(S.applySub(sub, first(equations).left),
                             S.applySub(sub, first(equations).right));
-    console.log("EQUATION-----------------------\n"+JSON.stringify(eq,null,2)+"\n----------------------------------")
 
     return T.isTVar(eq.left) ? solveVarEq(eq.left, eq.right) :
            T.isTVar(eq.right) ? solveVarEq(eq.right, eq.left) :
@@ -205,19 +211,24 @@ const solve = (equations: Equation[], sub: S.Sub): S.Sub | Error => {
 };
 
 const canPairUnify = (p1: T.PairTExp, p2: T.PairTExp):boolean =>{
-    if(T.isTVar(p1.car) && T.isTVar(p2.car)){
-        return (T.equivalentTEs(p1.car,p2.car) && T.equivalentTEs(p1.cdr,p2.cdr));
-    }
-
+ 
+    if(T.isAtomicTExp(p1.car) && T.isAtomicTExp(p2.car) && !deepEqual(p1.car,p2.car))
+        return false;
+    if(T.isAtomicTExp(p1.cdr) && T.isAtomicTExp(p2.cdr) && !deepEqual(p1.cdr,p2.cdr))
+        return false;
+    return true;
 }
 // Signature: canUnify(equation)
 // Purpose: Compare the structure of the type expressions of the equation
-const canUnify = (eq: Equation): boolean =>
-    (T.isProcTExp(eq.left) && T.isProcTExp(eq.right))?
+const canUnify = (eq: Equation): boolean =>{
+    return ((T.isProcTExp(eq.left) && T.isProcTExp(eq.right))?
         (eq.left.paramTEs.length === eq.right.paramTEs.length):
     (T.isPairTExp(eq.left) && T.isPairTExp(eq.right))?
         canPairUnify(eq.left,eq.right):        
-        false;
+        false);
+
+}
+
         
 
 
@@ -230,14 +241,17 @@ const canUnify = (eq: Equation): boolean =>
 //                         parseTExp('(T3 -> (T4 -> T4))')) =>
 //            [ {left:T2, right: (T4 -> T4)},
 //              {left:T3, right: T1)} ]
+//
+//      <T1,T2>
+//      <T3,T4>  ==>  T1=T3     && T2=T4
 // @Pre: isCompoundExp(eq.left) && isCompoundExp(eq.right) && canUnify(eq)
-const splitEquation = (eq: Equation): Equation[] =>{
-    return((T.isProcTExp(eq.left) && T.isProcTExp(eq.right)) ?
+const splitEquation = (eq: Equation): Equation[] =>
+    (T.isProcTExp(eq.left) && T.isProcTExp(eq.right)) ?
         R.zipWith(makeEquation,
                   R.prepend(eq.left.returnTE, eq.left.paramTEs),
                   R.prepend(eq.right.returnTE, eq.right.paramTEs)) :
     (T.isPairTExp(eq.left) && T.isPairTExp(eq.right)) ?
         R.zipWith(makeEquation,
                   [eq.left.car,eq.left.cdr],[eq.right.car,eq.right.cdr]):
-    []);
-        }
+    [];
+
