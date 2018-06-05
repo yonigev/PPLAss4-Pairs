@@ -6,6 +6,7 @@ import * as TC from "./L5-typecheck";
 import * as T from "./TExp";
 import { isError, safeF, trust } from './error';
 import {first, rest} from "./list";
+import deepEqual = require("deep-equal");
 
 // ============================================================n
 // Pool ADT
@@ -194,7 +195,8 @@ const solve = (equations: Equation[], sub: S.Sub): S.Sub | Error => {
     if (A.isEmpty(equations)) return sub;
     const eq = makeEquation(S.applySub(sub, first(equations).left),
                             S.applySub(sub, first(equations).right));
-
+   // console.log("EQUATION-----------------------\n"+JSON.stringify(eq,null,2)+"\n----------------------------------")
+    
     return T.isTVar(eq.left) ? solveVarEq(eq.left, eq.right) :
            T.isTVar(eq.right) ? solveVarEq(eq.right, eq.left) :
            bothSidesAtomic(eq) ? handleBothSidesAtomic(eq) :
@@ -203,14 +205,21 @@ const solve = (equations: Equation[], sub: S.Sub): S.Sub | Error => {
            Error(`Equation contains incompatible types ${eq}`);
 };
 
+const canPairUnify = (p1: T.PairTExp, p2: T.PairTExp):boolean =>{
+    console.log("\n\n\n\n\n\n\n\nCanPairUnify   -   "+JSON.stringify(p1,null,2)+"-------------"+JSON.stringify(p2,null,2));
+    if((T.isTVar(p1.car) && T.isTVar(p2.car)) || deepEqual(p1.car,p2.car)) {
+        return ((T.isTVar(p1.cdr) && T.isTVar(p2.cdr)) || deepEqual(p1.cdr,p2.cdr));
+    }
+    return true;
+
+}
 // Signature: canUnify(equation)
 // Purpose: Compare the structure of the type expressions of the equation
 const canUnify = (eq: Equation): boolean =>
     (T.isProcTExp(eq.left) && T.isProcTExp(eq.right))?
         (eq.left.paramTEs.length === eq.right.paramTEs.length):
     (T.isPairTExp(eq.left) && T.isPairTExp(eq.right))?
-        true:
-        
+        canPairUnify(eq.left,eq.right):        
         false;
         
 
@@ -224,6 +233,9 @@ const canUnify = (eq: Equation): boolean =>
 //                         parseTExp('(T3 -> (T4 -> T4))')) =>
 //            [ {left:T2, right: (T4 -> T4)},
 //              {left:T3, right: T1)} ]
+//
+//      <T1,T2>
+//      <T3,T4>  ==>  T1=T3     && T2=T4
 // @Pre: isCompoundExp(eq.left) && isCompoundExp(eq.right) && canUnify(eq)
 const splitEquation = (eq: Equation): Equation[] =>{
     return((T.isProcTExp(eq.left) && T.isProcTExp(eq.right)) ?
@@ -234,4 +246,4 @@ const splitEquation = (eq: Equation): Equation[] =>{
         R.zipWith(makeEquation,
                   [eq.left.car,eq.left.cdr],[eq.right.car,eq.right.cdr]):
     []);
-        }
+}
