@@ -127,8 +127,6 @@ export const makeEquationFromExp = (exp: A.Exp, pool: Pool): Equation[] =>
 // Example: unparseTExp(inferType(parse('(lambda (f x) (f (f x)))')))
 //          ==> '((T_1 -> T_1) * T_1 -> T_1)'
 export const inferType = (exp: A.Exp): T.TExp => {
-
-
   //  console.log(`Infer ${A.unparse(exp)}`)
     const pool = expToPool(exp);
 //    console.log(`Pool ${JSON.stringify(pool,null,2)}`);
@@ -216,6 +214,7 @@ const canPairUnify = (p1: T.PairTExp, p2: T.PairTExp):boolean =>{
         return false;
     if(T.isAtomicTExp(p1.cdr) && T.isAtomicTExp(p2.cdr) && !deepEqual(p1.cdr,p2.cdr))
         return false;
+
     return true;
 }
 // Signature: canUnify(equation)
