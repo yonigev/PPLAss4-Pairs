@@ -88,6 +88,37 @@ export const poolToEquations = (pool: Pool): Equation[] => {
     return R.chain((e: A.Exp) => makeEquationFromExp(e, pool), R.pluck('e', poolWithoutVars));
 };
 
+
+
+export const makeEquationFromConsCarCdr =   (exp: A.Exp, pool: Pool): Equation[] =>{
+    if(A.isAppExp(exp) && A.isPrimOp(exp.rator) && exp.rator.op === "cons"){
+        return  [makeEquation(inPool(pool, exp),
+           // T.makeProcTExp(R.map((e) => inPool(pool, e), exp.rands),
+          T.makePairTExp(<T.NonTupleTExp> inPool(pool,first(exp.rands)),<T.NonTupleTExp>inPool(pool,second(exp.rands) ))    ) ];
+    }
+    if(A.isAppExp(exp) && A.isPrimOp(exp.rator) && exp.rator.op ===  "car"){
+        if(A.isVarRef(first(exp.rands))){
+            return [makeEquation(inPool(pool, exp.rator),
+                T.makeProcTExp(R.map((e) => inPool(pool, e), exp.rands),
+                               inPool(pool, exp)))] ;
+
+        }
+        return  [makeEquation(inPool(pool, exp),
+            //T.makeProcTExp(R.map((e) => inPool(pool, e), exp.rands),
+            inPool(pool,first((<A.AppExp> first(exp.rands)).rands))   ) ];
+    }
+    if(A.isAppExp(exp) && A.isPrimOp(exp.rator) && exp.rator.op === "cdr"){
+        if(A.isVarRef(first(exp.rands))){
+            return [makeEquation(inPool(pool, exp.rator),
+                T.makeProcTExp(R.map((e) => inPool(pool, e), exp.rands),
+                               inPool(pool, exp)))] ;
+
+        }
+        return  [makeEquation(inPool(pool, exp),
+           // T.makeProcTExp(R.map((e) => inPool(pool, e), exp.rands),
+            inPool(pool,second((<A.AppExp> first(exp.rands)).rands))   )];    
+    }  
+}
 // Signature: make-equation-from-exp(exp, pool)
 // Purpose: Return a single equation
 // @Pre: exp is a member of pool
@@ -101,11 +132,9 @@ export const makeEquationFromExp = (exp: A.Exp, pool: Pool): Equation[] =>
                                     T.makeProcTExp(R.map((vd) => vd.texp, exp.args),
                                                    inPool(pool, R.last(exp.body))))] :
 
-    (A.isAppExp(exp) && A.isPrimOp(exp.rator) && exp.rator.op === "cons") ? 
-                                [makeEquation(inPool(pool, exp),
-                                            //T.makeProcTExp(R.map((e) => inPool(pool, e), exp.rands),
-                                          T.makePairTExp(<T.NonTupleTExp> inPool(pool,first(exp.rands)),<T.NonTupleTExp>inPool(pool,second(exp.rands) ))     )] :
-
+    ((A.isAppExp(exp) && A.isPrimOp(exp.rator)) && ((exp.rator.op === "cons") || (exp.rator.op === "car") || (exp.rator.op === "cdr"))) ? 
+                                makeEquationFromConsCarCdr(exp,pool):
+                                          
     // An application must respect the type of its operator
     // Type(Operator) = [T1 * .. * Tn -> Te]
     // Type(Application) = Te
@@ -132,12 +161,22 @@ export const inferType = (exp: A.Exp): T.TExp => {
   //  console.log(`Infer ${A.unparse(exp)}`)
     const pool = expToPool(exp);
 //    console.log(`Pool ${JSON.stringify(pool,null,2)}`);
+    let j;
+    // console.log("Pool  ----------------------")
+    // for(j=0; j<pool.length; j++){
+    //     console.log(A.unparse(pool[j].e) + " --- "+ T.unparseTExp(pool[j].te));
+    // }
     const equations = poolToEquations(pool);
+    // console.log("Equations  ---------------------------------------------------")
+    // let i;
+    // for(i=0; i<equations.length; i++){
+    //     console.log(T.unparseTExp(equations[i].left) +"     =   "+T.unparseTExp(equations[i].right));
+    // }
     //console.log(`Equations ${JSON.stringify(equations,null,2)}`);
     const sub = solveEquations(equations);
     //console.log(`Sub ${JSON.stringify(sub,null,2)}`);
     const texp = inPool(pool, exp);
-    // console.log(`TExp = ${T.unparseTExp(texp)}`);
+     //console.log(`TExp = ${T.unparseTExp(texp)}`);
     if (T.isTVar(texp) && ! isError(sub))
         return S.subGet(sub, texp);
     else
@@ -199,8 +238,10 @@ const solve = (equations: Equation[], sub: S.Sub): S.Sub | Error => {
                 Error(`Equation with non-equal atomic type ${eq}`);
 
     if (A.isEmpty(equations)) return sub;
+    console.log(JSON.stringify(first(equations),null,4))
     const eq = makeEquation(S.applySub(sub, first(equations).left),
                             S.applySub(sub, first(equations).right));
+    //console.log("----solving----    "+T.unparseTExp(eq.left) + " = "+T.unparseTExp(eq.right));
 
     return T.isTVar(eq.left) ? solveVarEq(eq.left, eq.right) :
            T.isTVar(eq.right) ? solveVarEq(eq.right, eq.left) :
